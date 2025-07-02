@@ -2,6 +2,7 @@ package com.faceit.userservice.service;
 
 import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
+import com.faceit.userservice.event.UserChangedEventAction;
 import com.faceit.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,7 +23,7 @@ public class UserService {
 
     public User addUser(User user) {
         User saved = userRepository.save(user);
-        eventPublisher.publishEvent(new UserChangedEvent(this, "CREATED", saved));
+        eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.CREATED, saved));
         return saved;
     }
 
@@ -41,7 +42,7 @@ public class UserService {
         toUpdate.setUpdatedAt(Instant.now());
 
         User updated = userRepository.save(toUpdate);
-        eventPublisher.publishEvent(new UserChangedEvent(this, "UPDATED", updated));
+        eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.UPDATED, updated));
         return updated;
     }
 
@@ -49,7 +50,7 @@ public class UserService {
         Optional<User> user = userRepository.findById(id);
         user.ifPresent(u -> {
             userRepository.deleteById(id);
-            eventPublisher.publishEvent(new UserChangedEvent(this, "DELETED", u));
+            eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.DELETED, u));
         });
     }
 
