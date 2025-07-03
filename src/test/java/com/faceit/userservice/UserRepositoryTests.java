@@ -8,13 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-class UserRepositoryTest {
+class UserRepositoryTests {
 
     @Autowired
     private UserRepository userRepository;
@@ -22,10 +21,10 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Should save and retrieve user by id")
     void saveAndFindById() {
-        UUID id = UUID.randomUUID();
-        Instant now = Instant.now();
+        var id = UUID.randomUUID();
+        var now = Instant.now();
 
-        User user = new User(
+        var user = new User(
                 id,
                 "Jane",
                 "Doe",
@@ -39,7 +38,7 @@ class UserRepositoryTest {
 
         userRepository.save(user);
 
-        Optional<User> retrieved = userRepository.findById(id);
+        var retrieved = userRepository.findById(id);
 
         assertThat(retrieved).isPresent();
         assertThat(retrieved.get().getEmail()).isEqualTo("jane@doe.com");
@@ -49,7 +48,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Should return empty if user not found")
     void findByIdNotFound() {
-        Optional<User> result = userRepository.findById(UUID.randomUUID());
+        var result = userRepository.findById(UUID.randomUUID());
         assertThat(result).isEmpty();
     }
 }

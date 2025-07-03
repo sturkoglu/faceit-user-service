@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -29,7 +28,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @EmbeddedKafka(partitions = 1, topics = {"user-events"}, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
-class UserServiceIntegrationTest {
+class UserServiceIntegrationTests {
 
     @Autowired
     private UserService userService;
@@ -70,13 +69,13 @@ class UserServiceIntegrationTest {
 
     @Test
     @DisplayName("Should save user and publish event")
-    void saveUserPublishesEvent() {
-        User user = new User(
+    void save_userPublishesEvent() {
+        var user = new User(
                 userId, "John", "Doe", "johnny", "secret", "john@doe.com", "NL", Instant.now(), Instant.now()
         );
-        userService.addUser(user);
+        userService.createUser(user);
 
-        Optional<User> foundUser = userRepository.findById(userId);
+        var foundUser = userRepository.findById(userId);
         assertThat(foundUser).isPresent();
         assertThat(foundUser.get().getFirstName()).isEqualTo("John");
         assertThat(hasUserChangedEvent(userId)).isTrue();
@@ -85,16 +84,16 @@ class UserServiceIntegrationTest {
 
     @Test
     @DisplayName("Should update user and publish event")
-    void updateUserCheckUpdatedAndPublishedEvent() {
-        User user = new User(
+    void update_userCheckUpdatedAndPublishedEvent() {
+        var user = new User(
                 userId, "Alice", "Smith", "alices", "pass", "alice@smith.com", "DE", Instant.now(), Instant.now()
         );
-        User savedUser = userRepository.save(user);
+        var savedUser = userRepository.save(user);
 
         savedUser.setFirstName("Alicia");
         userService.updateUser(userId, savedUser);
 
-        Optional<User> found = userRepository.findById(userId);
+        var found = userRepository.findById(userId);
         assertThat(found).isPresent();
         assertThat(found.get().getFirstName()).isEqualTo("Alicia");
         assertThat(hasUserChangedEvent(userId)).isTrue();
@@ -102,11 +101,11 @@ class UserServiceIntegrationTest {
 
     @Test
     @DisplayName("Should throw exception when updating non-existent user")
-    void updateUserNotFoundThrows() {
-        UUID nonExistingUserId = UUID.randomUUID();
-        User user = new User(userId, "Test", "User", "testuser", "password", "test@user.com", "NL", Instant.now(), Instant.now());
+    void update_userNotFoundThrows() {
+        var nonExistingUserId = UUID.randomUUID();
+        var user = new User(userId, "Test", "User", "testuser", "password", "test@user.com", "NL", Instant.now(), Instant.now());
 
-        User savedUser = userRepository.save(user);
+        var savedUser = userRepository.save(user);
 
         savedUser.setFirstName("Alicia");
 
@@ -119,11 +118,11 @@ class UserServiceIntegrationTest {
 
     @Test
     @DisplayName("Should delete user and publish event")
-    void deleteUser_thenNotFound() {
-        User user = new User(
+    void delete_user() {
+        var user = new User(
                 userId, "Bob", "Jones", "bobby", "pw", "bob@jones.com", "UK", Instant.now(), Instant.now()
         );
-        userRepository.save(user);
+        var savedUser = userRepository.save(user);
         userService.deleteUser(userId);
 
         assertThat(userRepository.findById(userId)).isNotPresent();
@@ -132,9 +131,9 @@ class UserServiceIntegrationTest {
 
     @Test
     @DisplayName("Should throw exception when deleting non-existent user")
-    void deleteUserUserNotFoundThrows() {
-        UUID nonExistingUserId = UUID.randomUUID();
-        User user = new User(
+    void delete_userUserNotFoundThrows() {
+        var nonExistingUserId = UUID.randomUUID();
+        var user = new User(
                 userId, "Bob", "Jones", "bobby", "pw", "bob@jones.com", "UK", Instant.now(), Instant.now()
         );
         userRepository.save(user);

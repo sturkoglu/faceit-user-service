@@ -12,7 +12,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     consumer:
       group-id: userservice-group
       auto-offset-reset: earliest
@@ -34,6 +34,22 @@ logging:
   level:
     root: INFO
     org.hibernate.SQL: DEBUG
+
+---
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/users
+    username: user
+    password: pass
+    driver-class-name: org.postgresql.Driver
+  kafka:
+    bootstrap-servers: localhost:9092
 
 ---
 
