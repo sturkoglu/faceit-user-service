@@ -56,19 +56,6 @@ Includes Swagger UI for API documentation.
 
 ---
 
-## API Documentation (Swagger)
-
-After the service starts, you can access the Swagger UI at:
-
-- [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-
-Here you can:
-- Explore all REST endpoints
-- Try out API calls directly in the browser
-- See request/response models
-
----
-
 ## Environment Variables
 
 The following variables are configured in your `docker-compose.yml`:
@@ -82,7 +69,54 @@ Database and Kafka settings can be changed in `docker-compose.yml` as needed.
 
 ---
 
-## Future Improvements
+## Development Choices and Assumptions
 
-- **Dynamic filtering**  
-- **GRpc implementation for internal communication**
+### Main Decisions
+
+- **Unique Constraints:**  
+  Both `email` and `nickname` fields are uniquely indexed at the database level, and the application checks for uniqueness before creating users for more user-friendly error messages.
+- **Event Notification:**  
+  User-related events (such as creation) are published to Kafka (`user-events` topic), enabling easy integration with other microservices or external consumers.
+- **Dockerized Stack:**  
+  The entire application stack (Spring Boot app, PostgreSQL, Kafka, Zookeeper) is orchestrated using Docker Compose, ensuring easy local development and environment parity.
+- **No Authentication:**  
+  Authentication and authorization are explicitly out-of-scope for this version, but can be integrated later as needed.
+- **Spring Boot with Spring Data JPA:**  
+  Chosen for rapid development, robust transaction support, and ease of integration with PostgreSQL.
+
+### Assumptions
+
+- All requests and responses use JSON.
+- Users are uniquely identified by a UUID.
+- No authentication or authorization is enforced in this service.
+- Kafka and database are run as single-node instances in development, but should be clustered in production.
+
+---
+
+## API Documentation (Swagger)
+
+Once running, access API docs and test endpoints via Swagger UI:
+
+- [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+You can interact with endpoints such as:
+- `POST /users` — create a new user
+- `GET /users/{id}` — fetch user by ID
+- `GET /users` — list users (with filtering and pagination)
+- `PUT /users/{id}` — update user
+- `DELETE /users/{id}` — delete user
+
+---
+
+## Improvements
+- **Grpc Controller**  
+  Implement Grpc control for internal communication
+- **Health Checks & Monitoring:**  
+  Integrate with tools like Prometheus/Grafana for application and infrastructure monitoring.
+- **Zero Downtime Deployments:**  
+  Use rolling updates and blue/green deployments in Kubernetes.
+- **Automated Tests & CI/CD:**  
+  Expand test coverage and set up automated builds, tests, and deployments.
+- **Multi-tenancy & Sharding:**  
+  Support multiple organizations and very large user sets.
+

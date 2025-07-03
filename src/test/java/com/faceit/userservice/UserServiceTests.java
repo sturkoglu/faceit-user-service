@@ -2,7 +2,7 @@ package com.faceit.userservice;
 
 import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
-import com.faceit.userservice.event.UserEventKafkaPublisher;
+import com.faceit.userservice.event.KafkaPublisher;
 import com.faceit.userservice.repository.UserRepository;
 import com.faceit.userservice.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class UserServiceTests {
 
     private UserRepository userRepository;
-    private UserEventKafkaPublisher eventPublisher;
+    private KafkaPublisher eventPublisher;
     private UserService userService;
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -34,7 +34,7 @@ class UserServiceTests {
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        eventPublisher = mock(UserEventKafkaPublisher.class);
+        eventPublisher = mock(KafkaPublisher.class);
         userService = new UserService(userRepository, eventPublisher, passwordEncoder);
     }
 

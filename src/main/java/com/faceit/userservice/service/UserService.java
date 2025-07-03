@@ -3,7 +3,7 @@ package com.faceit.userservice.service;
 import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
 import com.faceit.userservice.event.UserChangedEventAction;
-import com.faceit.userservice.event.UserEventKafkaPublisher;
+import com.faceit.userservice.event.KafkaPublisher;
 import com.faceit.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,7 +18,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserEventKafkaPublisher eventPublisher;
+    private final KafkaPublisher eventPublisher;
     private final PasswordEncoder passwordEncoder;
 
     public User createUser(User user) {

@@ -25,8 +25,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest
 @ActiveProfiles("test")
+@SpringBootTest(properties = {"kafka.user-events-topic=user-events"})
 @EmbeddedKafka(partitions = 1, topics = {"user-events"}, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 class UserServiceIntegrationTests {
 

@@ -24,6 +24,10 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+kafka:
+  publisher:
+    user-events-topic: user-events
+
 springdoc:
   api-docs:
     enabled: true
@@ -36,7 +40,6 @@ logging:
     org.hibernate.SQL: DEBUG
 
 ---
-
 
 ---
 spring:
