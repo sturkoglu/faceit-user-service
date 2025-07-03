@@ -4,14 +4,23 @@ import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
 import com.faceit.userservice.repository.UserRepository;
 import com.faceit.userservice.service.UserService;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,7 +28,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@RecordApplicationEvents
+@EmbeddedKafka(partitions = 1, topics = {"user-events"}, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 class UserServiceIntegrationTest {
 
     @Autowired
@@ -29,13 +38,34 @@ class UserServiceIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private ApplicationEvents applicationEvents;
+    private EmbeddedKafkaBroker embeddedKafkaBroker;
+
+    private KafkaConsumer<String, UserChangedEvent> consumer;
 
     private static final UUID userId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
+
+        // Set up Kafka consumer
+        Map<String, Object> consumerProps = KafkaTestUtils.consumerProps(
+                "testGroup", "false", embeddedKafkaBroker
+        );
+        consumerProps.put("key.deserializer", StringDeserializer.class);
+        consumerProps.put("value.deserializer", JsonDeserializer.class);
+        consumerProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        consumerProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, UserChangedEvent.class.getName());
+
+        consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(consumerProps);
+        consumer.subscribe(Collections.singleton("user-events"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (consumer != null) {
+            consumer.close();
+        }
     }
 
     @Test
@@ -46,11 +76,12 @@ class UserServiceIntegrationTest {
         );
         userService.addUser(user);
 
-        Optional<User> found = userRepository.findById(userId);
-        assertThat(found).isPresent();
-        assertThat(found.get().getFirstName()).isEqualTo("John");
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(1);
+        Optional<User> foundUser = userRepository.findById(userId);
+        assertThat(foundUser).isPresent();
+        assertThat(foundUser.get().getFirstName()).isEqualTo("John");
+        assertThat(hasUserChangedEvent(userId)).isTrue();
     }
+
 
     @Test
     @DisplayName("Should update user and publish event")
@@ -66,7 +97,7 @@ class UserServiceIntegrationTest {
         Optional<User> found = userRepository.findById(userId);
         assertThat(found).isPresent();
         assertThat(found.get().getFirstName()).isEqualTo("Alicia");
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(1);
+        assertThat(hasUserChangedEvent(userId)).isTrue();
     }
 
     @Test
@@ -83,7 +114,7 @@ class UserServiceIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("User not found");
 
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(0);
+        assertThat(hasUserChangedEvent(nonExistingUserId)).isFalse();
     }
 
     @Test
@@ -96,7 +127,7 @@ class UserServiceIntegrationTest {
         userService.deleteUser(userId);
 
         assertThat(userRepository.findById(userId)).isNotPresent();
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(1);
+        assertThat(hasUserChangedEvent(userId)).isTrue();
     }
 
     @Test
@@ -110,27 +141,18 @@ class UserServiceIntegrationTest {
         userService.deleteUser(nonExistingUserId);
 
         assertThat(userRepository.findById(nonExistingUserId)).isNotPresent();
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(0);
+        assertThat(hasUserChangedEvent(nonExistingUserId)).isFalse();
     }
 
-    @Test
-    void deleteUser_thenCheckDeleted() {
-        User user = new User(
-                userId, "Bob", "Jones", "bobby", "pw", "bob@jones.com", "UK", Instant.now(), Instant.now()
-        );
-        userRepository.save(user);
-        userService.deleteUser(userId);
+    private boolean hasUserChangedEvent(UUID userId) {
+        ConsumerRecords<String, UserChangedEvent> records = consumer.poll(Duration.ofSeconds(1));
 
-        assertThat(userRepository.findById(userId)).isNotPresent();
-    }
-
-    @Test
-    void createUser_shouldPublishEvent() {
-        User user = new User(
-                userId, "Eve", "Evans", "evee", "pw", "eve@evans.com", "BE", Instant.now(), Instant.now()
-        );
-        userService.addUser(user);
-
-        assertThat(applicationEvents.stream(UserChangedEvent.class)).hasSize(1);
+        for (ConsumerRecord<String, UserChangedEvent> record : records) {
+            UserChangedEvent event = record.value();
+            if (event.getUser().getId().equals(userId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

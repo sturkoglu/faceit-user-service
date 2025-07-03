@@ -1,20 +1,23 @@
 package com.faceit.userservice.event;
 
 import com.faceit.userservice.entity.User;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.context.ApplicationEvent;
 
 
-public class UserChangedEvent extends ApplicationEvent {
+@Data
+@NoArgsConstructor // <-- This is the key!
+@AllArgsConstructor
+public class UserChangedEvent{
 
-    @Getter
-    private final String action;
-    @Getter
-    private final User user;
+    private UserChangedEventAction action;
+    private User user;
 
     public UserChangedEvent(Object source, UserChangedEventAction action, User user) {
-        super(source);
-        this.action = action.toString();
+        this.action = action;
         this.user = user;
     }
 

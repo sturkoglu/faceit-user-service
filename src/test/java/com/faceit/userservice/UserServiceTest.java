@@ -2,12 +2,12 @@ package com.faceit.userservice;
 
 import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
+import com.faceit.userservice.event.UserEventKafkaPublisher;
 import com.faceit.userservice.service.UserService;
 import com.faceit.userservice.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -20,13 +20,13 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     private UserRepository userRepository;
-    private ApplicationEventPublisher eventPublisher;
+    private UserEventKafkaPublisher eventPublisher;
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        eventPublisher = mock(ApplicationEventPublisher.class);
+        eventPublisher = mock(UserEventKafkaPublisher.class);
         userService = new UserService(userRepository, eventPublisher);
     }
 
@@ -42,7 +42,7 @@ class UserServiceTest {
 
         assertThat(saved).isNotNull();
         verify(userRepository, times(1)).save(user);
-        verify(eventPublisher, times(1)).publishEvent(any(UserChangedEvent.class));
+        verify(eventPublisher, times(1)).publish(any(UserChangedEvent.class));
     }
     @Test
     @DisplayName("Should update user and publish event")
@@ -59,7 +59,7 @@ class UserServiceTest {
         assertThat(updated.getEmail()).isEqualTo("test@user.com");
         verify(userRepository, times(1)).findById(id);
         verify(userRepository, times(1)).save(user);
-        verify(eventPublisher, times(1)).publishEvent(any(UserChangedEvent.class));
+        verify(eventPublisher, times(1)).publish(any(UserChangedEvent.class));
     }
 
     @Test
@@ -76,7 +76,7 @@ class UserServiceTest {
 
         verify(userRepository, times(1)).findById(id);
         verify(userRepository, never()).save(any());
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -92,6 +92,6 @@ class UserServiceTest {
         userService.deleteUser(id);
 
         verify(userRepository, times(1)).deleteById(id);
-        verify(eventPublisher, times(1)).publishEvent(any(UserChangedEvent.class));
+        verify(eventPublisher, times(1)).publish(any(UserChangedEvent.class));
     }
 }

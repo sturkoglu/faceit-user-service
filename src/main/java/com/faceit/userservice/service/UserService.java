@@ -3,6 +3,7 @@ package com.faceit.userservice.service;
 import com.faceit.userservice.entity.User;
 import com.faceit.userservice.event.UserChangedEvent;
 import com.faceit.userservice.event.UserChangedEventAction;
+import com.faceit.userservice.event.UserEventKafkaPublisher;
 import com.faceit.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,11 +20,11 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final UserEventKafkaPublisher eventPublisher;
 
     public User addUser(User user) {
         User saved = userRepository.save(user);
-        eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.CREATED, saved));
+        eventPublisher.publish(new UserChangedEvent(this, UserChangedEventAction.CREATED, saved));
         return saved;
     }
 
@@ -42,7 +43,7 @@ public class UserService {
         toUpdate.setUpdatedAt(Instant.now());
 
         User updated = userRepository.save(toUpdate);
-        eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.UPDATED, updated));
+        eventPublisher.publish(new UserChangedEvent(this, UserChangedEventAction.UPDATED, updated));
         return updated;
     }
 
@@ -50,7 +51,7 @@ public class UserService {
         Optional<User> user = userRepository.findById(id);
         user.ifPresent(u -> {
             userRepository.deleteById(id);
-            eventPublisher.publishEvent(new UserChangedEvent(this, UserChangedEventAction.DELETED, u));
+            eventPublisher.publish(new UserChangedEvent(this, UserChangedEventAction.DELETED, u));
         });
     }
 
